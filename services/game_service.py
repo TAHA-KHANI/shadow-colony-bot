@@ -136,6 +136,8 @@ async def register_night_action(session: AsyncSession, user: User, action_type: 
     season = await active_season(session)
     if not season or season.status != "active" or state.paused:
         raise GameError("بازی الآن برای عملیات شبانه باز نیست.")
+    if state.phase != "night_ops":
+        raise GameError("عملیات شبانه فقط از ساعت ۲۰:۰۰ تا ۰۱:۳۰ باز است.")
     allowed = {"hack", "ddos", "scan", "steal", "dig", "inform", "ambush", "cleanup", "dawn_raid", "betray"}
     if action_type not in allowed:
         raise GameError("عملیات ناشناخته است.")

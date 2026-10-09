@@ -417,6 +417,26 @@ async def weekly_market_days() -> None:
         state.market_week = week
 
 
+async def open_night_ops(bot: Bot) -> None:
+    async with SessionFactory.begin() as session:
+        state = await session.get(CityState, 1, with_for_update=True)
+        if not state or not state.season_id or state.paused:
+            return
+        if state.phase == "night_ops":
+            return
+        state.phase = "night_ops"
+    await bot.send_message(settings.group_id, "🌑 پنل عملیات شبانه باز شد. تا ساعت ۰۱:۳۰ وقت دارید توی پی‌وی نقشه کصشرتون رو ثبت کنید.")
+
+
+async def close_night_ops(bot: Bot) -> None:
+    async with SessionFactory.begin() as session:
+        state = await session.get(CityState, 1, with_for_update=True)
+        if not state or state.phase != "night_ops":
+            return
+        state.phase = "underground"
+    await bot.send_message(settings.group_id, "🔒 عملیات معمولی بسته شد. هر گهی خوردید ثبت شده؛ صبح نتیجه‌ش درمیاد.")
+
+
 def build_scheduler(bot: Bot) -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone=settings.timezone, job_defaults={"coalesce": True, "max_instances": 1, "misfire_grace_time": 3600})
     jobs = [
@@ -427,6 +447,8 @@ def build_scheduler(bot: Bot) -> AsyncIOScheduler:
         (create_bounties, {"hour": 13, "minute": 5}, [bot], "bounties"),
         (open_fight, {"hour": 17, "minute": 0}, [bot], "fight_open"),
         (resolve_fight, {"hour": 19, "minute": 30}, [bot], "fight"),
+        (open_night_ops, {"hour": 20, "minute": 0}, [bot], "night_open"),
+        (close_night_ops, {"hour": 1, "minute": 30}, [bot], "night_close"),
         (market_warning, {"hour": 2, "minute": 20}, [bot], "market_warning"),
         (open_market, {"hour": 2, "minute": 30}, [bot], "market"),
         (close_market, {"hour": 2, "minute": 45}, [bot], "market_close"),
@@ -456,3 +478,7 @@ async def catch_up(bot: Bot) -> None:
         await open_fight(bot)
     if minutes >= 19 * 60 + 30:
         await resolve_fight(bot)
+    if minutes >= 20 * 60 or minutes < 90:
+        await open_night_ops(bot)
+    elif 90 <= minutes < 7 * 60 + 30:
+        await close_night_ops(bot)
