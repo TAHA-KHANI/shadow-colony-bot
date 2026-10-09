@@ -65,6 +65,7 @@ async def profile(message: Message) -> None:
         jailed = "آره، آب خنک بخور" if user.jailed_until and user.jailed_until > datetime.now(timezone.utc) else "نه"
         text = (
             f"🕶 <b>پرونده {escape(user.game_name)}</b>\n\n"
+            f"🆔 شناسه: <code>{user.telegram_id}</code>\n"
             f"💵 تمیز: <code>{user.clean_cash:,}</code>\n💸 کثیف: <code>{user.dirty_cash:,}</code>\n"
             f"🔐 گاوصندوق: <code>{user.vault:,}</code>\n🏢 املاک: {len(props)}\n"
             f"💪 قدرت {user.strength} | 🛡 دفاع {user.defense} | ⚡ سرعت {user.speed}\n"
